@@ -1,0 +1,5 @@
+.git
+logs/
+config.env
+test_setup.sh
+__pycache__/
