@@ -3,18 +3,31 @@ set -Eeuo pipefail
 
 PROJECT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 CONFIG_FILE="$PROJECT_DIR/config.env"
-TEST_LOG="$PROJECT_DIR/logs/test-service.log"
+LOG_DIR="$PROJECT_DIR/logs"
+TEST_LOG="$LOG_DIR/test-service.log"
 BACKUP_FILE="$(mktemp)"
 SERVER_PID=""
+CONFIG_EXISTED=false
 
-cp "$CONFIG_FILE" "$BACKUP_FILE"
+mkdir -p "$LOG_DIR"
+
+if [[ -f "$CONFIG_FILE" ]]; then
+    cp "$CONFIG_FILE" "$BACKUP_FILE"
+    CONFIG_EXISTED=true
+fi
 
 cleanup() {
     if [[ -n "$SERVER_PID" ]]; then
         kill "$SERVER_PID" 2>/dev/null || true
         wait "$SERVER_PID" 2>/dev/null || true
     fi
-    cp "$BACKUP_FILE" "$CONFIG_FILE"
+
+    if [[ "$CONFIG_EXISTED" == true ]]; then
+        cp "$BACKUP_FILE" "$CONFIG_FILE"
+    else
+        rm -f "$CONFIG_FILE"
+    fi
+
     rm -f "$BACKUP_FILE"
 }
 trap cleanup EXIT
@@ -61,6 +74,6 @@ if [[ "$HTTP_OK" != true ]]; then
     cat "$TEST_LOG"
     exit 1
 fi
-pass "HTTP service returned expected page"
 
+pass "HTTP service returned expected page"
 echo "All tests passed."
